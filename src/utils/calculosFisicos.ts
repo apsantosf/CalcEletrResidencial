@@ -30,8 +30,12 @@ export const sugerirBitola = (
     (c) => c.capacidadeCorrente >= corrente,
   );
 
+  // 🛡️ TRAVA DE SEGURANÇA: Se a corrente pedida for maior que o maior cabo da tabela
+  if (cabosPossiveis.length === 0) {
+    return tabelaCondutores[tabelaCondutores.length - 1]; // Retorna o cabo máximo (120mm²)
+  }
+
   const bitolaIdeal = cabosPossiveis.find((c) => {
-    // Chamamos a função diretamente, pois estão no mesmo arquivo!
     const queda = calcularQuedaTensao(comprimento, corrente, c.bitola, tensao);
     return queda <= 4.0;
   });

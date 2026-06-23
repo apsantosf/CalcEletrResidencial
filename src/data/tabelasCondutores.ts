@@ -2,7 +2,7 @@
 
 export interface Condutor {
   bitola: number;
-  capacidadeCorrente: number; // Ampères (baseado em método de instalação comum)
+  capacidadeCorrente: number;
 }
 
 export const tabelaCondutores: Condutor[] = [
@@ -13,4 +13,10 @@ export const tabelaCondutores: Condutor[] = [
   { bitola: 10, capacidadeCorrente: 50 },
   { bitola: 16, capacidadeCorrente: 68 },
   { bitola: 25, capacidadeCorrente: 89 },
+  // Adicionando cabos maiores para Ramal de Entrada (Valores aproximados de norma)
+  { bitola: 35, capacidadeCorrente: 111 },
+  { bitola: 50, capacidadeCorrente: 134 },
+  { bitola: 70, capacidadeCorrente: 171 },
+  { bitola: 95, capacidadeCorrente: 207 },
+  { bitola: 120, capacidadeCorrente: 239 },
 ];

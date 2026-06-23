@@ -24,7 +24,7 @@ export const configuracoesConcessionarias: Record<
     permiteAluminio: false,
   },
   NEOENERGIA: {
-    nome: "Neoenergia",
+    nome: "NEOENERGIA (Elektra)",
     caboMinimoEntrada: 10,
     limiteQuedaTensao: 4.0,
     permiteAluminio: true,
