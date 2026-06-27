@@ -1,83 +1,23 @@
 // src/app/index.tsx
 import { useEffect, useState } from "react";
 import {
+  Alert,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { InfoRamal } from "../components/ui/InfoRamal";
+import { InputComInfo } from "../components/ui/InputComInfo";
 import { Seletor } from "../components/ui/Seletor";
 import {
   configuracoesConcessionarias,
   RegrasConcessionaria,
 } from "../data/regrasConcessionarias";
-import { sugerirBitola } from "../utils/calculosFisicos";
+import { obterFatorDemanda, processarTrecho } from "../utils/calculosEletricos";
 
-const determinarTipoDisjuntor = (corrente: number) => {
-  if (corrente <= 40) {
-    return { tipo: "Monofásico (1 Polo)", fases: 1 };
-  } else if (corrente > 40 && corrente <= 70) {
-    return { tipo: "Bifásico (2 Polos)", fases: 2 };
-  } else {
-    return { tipo: "Trifásico (3 Polos)", fases: 3 };
-  }
-};
-
-// Componente para o Input com Ícone (Abre um card explicativo)
-interface InputComInfoProps {
-  placeholder: string;
-  value: string;
-  onChangeText: (text: string) => void;
-  infoTitulo: string;
-  infoTexto: string;
-}
-
-function InputComInfo({
-  placeholder,
-  value,
-  onChangeText,
-  infoTitulo,
-  infoTexto,
-}: InputComInfoProps) {
-  // Controle para mostrar/esconder a explicação
-  const [mostrarInfo, setMostrarInfo] = useState(false);
-
-  return (
-    <View style={styles.inputContainerBox}>
-      <View style={styles.inputRow}>
-        <TextInput
-          style={styles.inputField}
-          placeholder={placeholder}
-          keyboardType="numeric"
-          value={value}
-          onChangeText={onChangeText}
-        />
-        <TouchableOpacity
-          style={styles.infoButton}
-          onPress={() => setMostrarInfo(!mostrarInfo)}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.infoIconText}>ℹ️</Text>
-        </TouchableOpacity>
-      </View>
-
-      {/* Caixinha que aparece quando clica no "i" */}
-      {mostrarInfo && (
-        <View style={styles.infoCaixaTexto}>
-          <Text style={styles.infoTituloCaixa}>{infoTitulo}</Text>
-          <Text style={styles.infoDescricaoCaixa}>{infoTexto}</Text>
-        </View>
-      )}
-    </View>
-  );
-}
-
-// Tela Principal
 export default function TelaNovoRamal() {
-  // Entradas do Usuário
   const [distanciaExterna, setDistanciaExterna] = useState("");
   const [distanciaInterna, setDistanciaInterna] = useState("");
   const [potenciaTotal, setPotenciaTotal] = useState("");
@@ -87,72 +27,18 @@ export default function TelaNovoRamal() {
     Object.values(configuracoesConcessionarias)[0],
   );
 
-  // Resultados Calculados
-  const [correnteCalculada, setCorrenteCalculada] = useState<number | null>(
-    null,
-  );
-  const [caboEntrada, setCaboEntrada] = useState<number | null>(null);
-  const [disjuntorEntrada, setDisjuntorEntrada] = useState<number | null>(null);
-  const [tipoDisjuntorEntrada, setTipoDisjuntorEntrada] = useState("");
+  // Estados dos Resultados
+  const [fatorAplicado, setFatorAplicado] = useState<number | null>(null);
+  const [correntePura, setCorrentePura] = useState<number | null>(null);
+  const [correnteDemanda, setCorrenteDemanda] = useState<number | null>(null);
 
-  const [caboInterno, setCaboInterno] = useState<number | null>(null);
-  const [disjuntorInterno, setDisjuntorInterno] = useState<number | null>(null);
-  const [tipoDisjuntorInterno, setTipoDisjuntorInterno] = useState("");
+  const [resultadoTrecho1, setResultadoTrecho1] = useState<any>(null);
+  const [resultadoTrecho2, setResultadoTrecho2] = useState<any>(null);
 
-  const [statusMsg, setStatusMsg] = useState("");
-
+  // Limpa os resultados da tela sempre que o usuário alterar algum valor de entrada
   useEffect(() => {
-    if (distanciaExterna && distanciaInterna && potenciaTotal) {
-      const distExtNum = Number(distanciaExterna);
-      const distIntNum = Number(distanciaInterna);
-      const potNum = Number(potenciaTotal);
-      const tensaoNum = Number(tensao);
-
-      if (
-        !isNaN(distExtNum) &&
-        !isNaN(distIntNum) &&
-        !isNaN(potNum) &&
-        tensaoNum > 0
-      ) {
-        const corrNum = potNum / tensaoNum;
-        setCorrenteCalculada(Number(corrNum.toFixed(1)));
-
-        // 1. Cálculo do Ramal de Entrada (Rua -> Medidor)
-        const caboMin = concessionaria.caboMinimoEntrada || 10;
-        const calculoEntrada = sugerirBitola(distExtNum, corrNum, tensaoNum);
-        const bitolaEntradaAjustada = Math.max(calculoEntrada.bitola, caboMin);
-
-        const disjEntradaVal =
-          calculoEntrada.capacidadeCorrente <= 50
-            ? 50
-            : calculoEntrada.capacidadeCorrente;
-        const recDisjEntrada = determinarTipoDisjuntor(disjEntradaVal);
-
-        setCaboEntrada(bitolaEntradaAjustada);
-        setDisjuntorEntrada(disjEntradaVal);
-        setTipoDisjuntorEntrada(recDisjEntrada.tipo);
-
-        // 2. Cálculo do Ramal Interno (Medidor -> Segundo Disjuntor / QDC)
-        const calculoInterno = sugerirBitola(distIntNum, corrNum, tensaoNum);
-        const disjInternoVal = calculoInterno.capacidadeCorrente;
-        const recDisjInterno = determinarTipoDisjuntor(disjInternoVal);
-
-        setCaboInterno(calculoInterno.bitola);
-        setDisjuntorInterno(disjInternoVal);
-        setTipoDisjuntorInterno(recDisjInterno.tipo);
-
-        setStatusMsg(
-          `Dimensionamento concluído com sucesso conforme as normas da ${concessionaria.nome}.`,
-        );
-      }
-    } else {
-      setCorrenteCalculada(null);
-      setCaboEntrada(null);
-      setDisjuntorEntrada(null);
-      setCaboInterno(null);
-      setDisjuntorInterno(null);
-      setStatusMsg("");
-    }
+    setResultadoTrecho1(null);
+    setResultadoTrecho2(null);
   }, [
     distanciaExterna,
     distanciaInterna,
@@ -160,6 +46,49 @@ export default function TelaNovoRamal() {
     tensao,
     concessionaria,
   ]);
+
+  // Função disparada apenas quando o botão "Calcular" é pressionado
+  const handleCalcular = () => {
+    const distExtNum = Number(distanciaExterna);
+    const distIntNum = Number(distanciaInterna);
+    const potInstalada = Number(potenciaTotal);
+    const tensaoNum = Number(tensao);
+
+    // Validação básica para evitar erros
+    if (!distanciaExterna || !distanciaInterna || !potenciaTotal) {
+      Alert.alert(
+        "Atenção",
+        "Por favor, preencha todos os campos antes de calcular.",
+      );
+      return;
+    }
+
+    if (
+      !isNaN(distExtNum) &&
+      !isNaN(distIntNum) &&
+      !isNaN(potInstalada) &&
+      tensaoNum > 0
+    ) {
+      // ⚡ Executa os cálculos apenas aqui
+      const corrPuraVal = potInstalada / tensaoNum;
+      const fatorVal = obterFatorDemanda(potInstalada);
+      const corrDemandaVal = (potInstalada * fatorVal) / tensaoNum;
+
+      setFatorAplicado(Math.round(fatorVal * 100));
+      setCorrentePura(Number(corrPuraVal.toFixed(1)));
+      setCorrenteDemanda(Number(corrDemandaVal.toFixed(1)));
+
+      const caboMin = concessionaria.caboMinimoEntrada || 10;
+
+      // 📍 Processa o 1º e o 2º trecho
+      setResultadoTrecho1(
+        processarTrecho(distExtNum, corrDemandaVal, tensaoNum, caboMin),
+      );
+      setResultadoTrecho2(
+        processarTrecho(distIntNum, corrDemandaVal, tensaoNum, 0),
+      );
+    }
+  };
 
   return (
     <ScrollView contentContainerStyle={styles.scrollWrapper}>
@@ -188,7 +117,7 @@ export default function TelaNovoRamal() {
           value={distanciaExterna}
           onChangeText={setDistanciaExterna}
           infoTitulo="Rua ao Medidor"
-          infoTexto="É o cabo que vem do poste da rede da concessionária na rua até a caixa do medidor (relógio) de entrada da residência."
+          infoTexto="Cabo da rede da rua até a caixa do medidor de entrada da residência."
         />
 
         <InputComInfo
@@ -196,15 +125,15 @@ export default function TelaNovoRamal() {
           value={distanciaInterna}
           onChangeText={setDistanciaInterna}
           infoTitulo="Medidor ao Quadro Geral"
-          infoTexto="É a distância do poste de entrada da residência (onde fica o medidor) até o Quadro de Distribuição de Circuitos (QDC) que fica dentro da casa."
+          infoTexto="Distância do medidor de entrada até o Quadro de Distribuição (QDC) interno."
         />
 
         <InputComInfo
-          placeholder="Potência Total de Demanda (W)"
+          placeholder="Potência Total Instalada (W)"
           value={potenciaTotal}
           onChangeText={setPotenciaTotal}
-          infoTitulo="Potência de Demanda"
-          infoTexto="A soma total da potência (em Watts) de todas as lâmpadas, tomadas e equipamentos pesados, já aplicando o fator de demanda (porque nem tudo liga ao mesmo tempo)."
+          infoTitulo="Potência Instalada"
+          infoTexto="Soma total de todas as cargas da residência."
         />
 
         <Seletor
@@ -219,14 +148,33 @@ export default function TelaNovoRamal() {
           itemValueKey="valor"
         />
 
-        {caboEntrada && disjuntorEntrada && (
+        {/* 🆕 Botão de Calcular adicionado aqui */}
+        <TouchableOpacity
+          style={styles.botaoCalcular}
+          onPress={handleCalcular}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.txtBotaoCalcular}>Calcular Dimensionamento</Text>
+        </TouchableOpacity>
+
+        {resultadoTrecho1 && resultadoTrecho2 && (
           <View style={styles.cardResultado}>
-            <Text style={styles.txtLabelCorrente}>
-              ⚡ Corrente de Demanda Calculada:
-            </Text>
-            <Text style={styles.txtCorrenteCalculada}>
-              {correnteCalculada} A
-            </Text>
+            <View style={styles.boxDemandaInfo}>
+              <Text style={styles.txtFatorTexto}>
+                🔌 Corrente Bruta Total:{" "}
+                <Text style={styles.txtFatorDestaque}>{correntePura} A</Text>
+              </Text>
+              <Text style={styles.txtFatorTexto}>
+                📉 Fator aplicado pela Concessionária:{" "}
+                <Text style={styles.txtFatorDestaque}>{fatorAplicado}%</Text>
+              </Text>
+              <Text style={styles.txtLabelCorrente}>
+                ⚡ Corrente de Demanda Corrigida:
+              </Text>
+              <Text style={styles.txtCorrenteCalculada}>
+                {correnteDemanda} A
+              </Text>
+            </View>
 
             <View style={styles.divisorFino} />
 
@@ -238,14 +186,18 @@ export default function TelaNovoRamal() {
               percurso="Rua até o Medidor"
             />
 
-            <Text style={styles.txtLabel}>Bitola do Cabo:</Text>
-            <Text style={styles.txtResultado}>{caboEntrada} mm²</Text>
-
-            <Text style={styles.txtLabel}>Disjuntor Geral (Entrada):</Text>
-            <Text style={styles.txtResultadoDisj}>{disjuntorEntrada} A</Text>
-
-            <Text style={styles.txtLabelRecomendacao}>Classificação:</Text>
-            <Text style={styles.txtRecomendacao}>{tipoDisjuntorEntrada}</Text>
+            <View style={styles.subCardComparacao}>
+              <Text style={styles.labelSubCardDemanda}>
+                • Cálculo com Demanda (Norma):
+              </Text>
+              <Text style={styles.txtSubResultadoDemanda}>
+                Cabo: {resultadoTrecho1.bitola} mm² | Disjuntor:{" "}
+                {resultadoTrecho1.disjuntor} A
+              </Text>
+              <Text style={styles.txtClassificacao}>
+                Classificação: {resultadoTrecho1.classificacao}
+              </Text>
+            </View>
 
             <View style={styles.divisor} />
 
@@ -255,16 +207,23 @@ export default function TelaNovoRamal() {
               percurso="Medidor até o QDC"
             />
 
-            <Text style={styles.txtLabel}>Bitola do Cabo (Técnica):</Text>
-            <Text style={styles.txtResultado}>{caboInterno} mm²</Text>
+            <View style={styles.subCardComparacao}>
+              <Text style={styles.labelSubCardDemanda}>
+                • Cálculo com Demanda (Otimizado):
+              </Text>
+              <Text style={styles.txtSubResultadoDemanda}>
+                Cabo: {resultadoTrecho2.bitola} mm² | Disjuntor:{" "}
+                {resultadoTrecho2.disjuntor} A
+              </Text>
+              <Text style={styles.txtClassificacao}>
+                Classificação: {resultadoTrecho2.classificacao}
+              </Text>
+            </View>
 
-            <Text style={styles.txtLabel}>Segundo Disjuntor (Geral QDC):</Text>
-            <Text style={styles.txtResultadoDisj}>{disjuntorInterno} A</Text>
-
-            <Text style={styles.txtLabelRecomendacao}>Classificação:</Text>
-            <Text style={styles.txtRecomendacao}>{tipoDisjuntorInterno}</Text>
-
-            <Text style={styles.txtMensagemStatus}>{statusMsg}</Text>
+            <Text style={styles.txtMensagemStatus}>
+              Dimensionamento concluído com sucesso conforme as normas da{" "}
+              {concessionaria.nome}.
+            </Text>
           </View>
         )}
       </View>
@@ -273,53 +232,6 @@ export default function TelaNovoRamal() {
 }
 
 const styles = StyleSheet.create({
-  // Estilos do componente de Input com Ícone
-  inputContainerBox: {
-    marginBottom: 10,
-    width: "100%",
-  },
-  inputRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#ccc",
-  },
-  inputField: {
-    flex: 1,
-    padding: 15,
-  },
-  infoButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  infoIconText: {
-    fontSize: 20,
-    color: "#0284c7",
-  },
-  infoCaixaTexto: {
-    backgroundColor: "#e0f2fe",
-    padding: 12,
-    borderRadius: 6,
-    marginTop: 4,
-    borderLeftWidth: 4,
-    borderLeftColor: "#0284c7",
-  },
-  infoTituloCaixa: {
-    fontWeight: "bold",
-    color: "#0369a1",
-    fontSize: 13,
-    marginBottom: 4,
-  },
-  infoDescricaoCaixa: {
-    color: "#0c4a6e",
-    fontSize: 12,
-    lineHeight: 18,
-  },
-  // Estilos da Tela Principal
   scrollWrapper: {
     flexGrow: 1,
     justifyContent: "center",
@@ -347,14 +259,49 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     textAlign: "center",
   },
+
+  // 🆕 Estilo do Botão
+  botaoCalcular: {
+    backgroundColor: "#0284c7", // Azul profissional
+    paddingVertical: 15,
+    borderRadius: 8,
+    alignItems: "center",
+    marginTop: 10,
+    marginBottom: 10,
+    width: "100%",
+    elevation: 2,
+  },
+  txtBotaoCalcular: {
+    color: "#ffffff",
+    fontSize: 16,
+    fontWeight: "bold",
+    textTransform: "uppercase",
+  },
+
   cardResultado: {
-    marginTop: 20,
+    marginTop: 10,
     padding: 15,
     backgroundColor: "#064e3b",
     borderRadius: 8,
     alignItems: "center",
+    width: "100%",
   },
-  txtLabelCorrente: { color: "#a7f3d0", fontSize: 13, fontWeight: "600" },
+  boxDemandaInfo: {
+    width: "100%",
+    alignItems: "center",
+    backgroundColor: "#045e45",
+    padding: 10,
+    borderRadius: 6,
+    marginBottom: 5,
+  },
+  txtFatorTexto: { color: "#ccfbf1", fontSize: 12, marginBottom: 2 },
+  txtFatorDestaque: { fontWeight: "bold", color: "#fde047" },
+  txtLabelCorrente: {
+    color: "#a7f3d0",
+    fontSize: 13,
+    fontWeight: "600",
+    marginTop: 5,
+  },
   txtCorrenteCalculada: {
     color: "#fff",
     fontSize: 26,
@@ -373,35 +320,37 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     marginBottom: 10,
   },
-  txtLabel: { color: "#cbd5e1", fontSize: 12, marginTop: 5 },
-  txtResultado: {
+  subCardComparacao: {
+    backgroundColor: "#044e39",
+    borderRadius: 8,
+    padding: 12,
+    width: "100%",
+    borderWidth: 1,
+    borderColor: "#065f46",
+    marginTop: 5,
+  },
+  labelSubCardDemanda: { color: "#a7f3d0", fontSize: 12, fontWeight: "600" },
+  txtSubResultadoDemanda: {
     color: "#fde047",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 10,
-  },
-  txtResultadoDisj: {
-    color: "#67e8f9",
-    fontSize: 22,
-    fontWeight: "bold",
-    marginBottom: 5,
-  },
-  txtLabelRecomendacao: { color: "#cbd5e1", fontSize: 12, marginTop: 5 },
-  txtRecomendacao: {
-    color: "#34d399",
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 15,
+    marginTop: 2,
+  },
+  txtClassificacao: {
+    color: "#34d399",
+    fontSize: 11,
+    fontWeight: "500",
+    marginTop: 4,
   },
   divisor: {
     height: 1,
     width: "100%",
-    backgroundColor: "#334155",
+    backgroundColor: "#045e45",
     marginVertical: 15,
   },
   txtMensagemStatus: {
     color: "#d1fae5",
-    fontSize: 12,
+    fontSize: 11,
     marginTop: 15,
     fontStyle: "italic",
     textAlign: "center",
