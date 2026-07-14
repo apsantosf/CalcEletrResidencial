@@ -1,5 +1,4 @@
 // src/components/ui/Seletor.tsx
-// src/components/ui/Seletor.tsx
 import { Picker } from "@react-native-picker/picker";
 import { StyleSheet, Text, View } from "react-native";
 

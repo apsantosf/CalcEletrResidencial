@@ -1,5 +1,4 @@
 // src/data/tabelasCondutores.ts
-
 export interface Condutor {
   bitola: number;
   capacidadeCorrente: number;

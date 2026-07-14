@@ -1,0 +1,232 @@
+// src/components/ui/FormPrevisaoCarga.tsx
+import { Picker } from "@react-native-picker/picker";
+import { useEffect, useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
+import { applyPickerStyles } from "./pickerStyles";
+
+export interface AmbientePayload {
+  nome: string;
+  tipo: string;
+  area: number;
+  perimetro: number;
+}
+
+interface FormProps {
+  onAdicionar?: (data: AmbientePayload) => void;
+  onCalcular?: (data: AmbientePayload) => void;
+}
+
+// Lista de opções para o Picker contendo o nome amigável e o tipo normativo
+const OPCOES_COMODOS = [
+  { label: "Área de Serviço", tipo: "cozinha" },
+  { label: "Banheiro", tipo: "banheiro" },
+  { label: "Cozinha", tipo: "cozinha" },
+  { label: "Quarto", tipo: "sala" },
+  { label: "Sala de Estar", tipo: "sala" },
+];
+
+export default function FormPrevisaoCarga({
+  onAdicionar,
+  onCalcular,
+}: FormProps) {
+  const [nomeAmbiente, setNomeAmbiente] = useState("Sala de Estar");
+  const [tipoNormativo, setTipoNormativo] = useState("sala");
+  const [area, setArea] = useState("");
+  const [perimetro, setPerimetro] = useState("");
+  const [calcRealizado, setCalcRealizado] = useState(false);
+
+  useEffect(() => {
+    applyPickerStyles();
+  }, []);
+
+  const handleSelecaoPicker = (itemValue: string) => {
+    const selecao = OPCOES_COMODOS.find((c) => c.label === itemValue);
+    if (selecao) {
+      setNomeAmbiente(selecao.label);
+      setTipoNormativo(selecao.tipo);
+      setCalcRealizado(false);
+    }
+  };
+
+  const handleCalcular = () => {
+    const nArea = parseFloat(area.replace(",", "."));
+    const nPerim = parseFloat(perimetro.replace(",", "."));
+
+    if (isNaN(nArea) || isNaN(nPerim)) {
+      return alert("Preencha Área e Perímetro corretamente.");
+    }
+    if (!nomeAmbiente.trim()) {
+      return alert("Informe o nome do ambiente.");
+    }
+
+    setCalcRealizado(true);
+    if (onCalcular) {
+      onCalcular({
+        nome: nomeAmbiente,
+        tipo: tipoNormativo,
+        area: nArea,
+        perimetro: nPerim,
+      });
+    }
+  };
+
+  const handleAdicionar = () => {
+    if (onAdicionar) {
+      onAdicionar({
+        nome: nomeAmbiente,
+        tipo: tipoNormativo,
+        area: parseFloat(area.replace(",", ".")),
+        perimetro: parseFloat(perimetro.replace(",", ".")),
+      });
+    }
+
+    setCalcRealizado(false);
+    setArea("");
+    setPerimetro("");
+  };
+
+  return (
+    <View style={styles.cardForm}>
+      <Text style={styles.label}>
+        Sugestões de Ambientes (Normativo NBR 5410)
+      </Text>
+
+      {/* 🚀 PICKER NATIVO RESTAURADO */}
+      <View style={styles.pickerContainer}>
+        <Picker
+          selectedValue={nomeAmbiente}
+          onValueChange={handleSelecaoPicker}
+          style={styles.picker}
+        >
+          {OPCOES_COMODOS.map((item, index) => (
+            <Picker.Item key={index} label={item.label} value={item.label} />
+          ))}
+        </Picker>
+      </View>
+
+      <Text style={styles.label}>Nome do Ambiente (Livre / Editável)</Text>
+      <TextInput
+        style={styles.inputNome}
+        value={nomeAmbiente}
+        onChangeText={(text) => {
+          setNomeAmbiente(text);
+          setCalcRealizado(false);
+        }}
+        placeholder="Ex: Sala de TV Exclusiva"
+      />
+
+      <View style={styles.row}>
+        <View style={styles.col}>
+          <Text style={styles.label}>Área (m²)</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={area}
+            onChangeText={(text) => {
+              setArea(text);
+              setCalcRealizado(false);
+            }}
+            placeholder="0.0"
+          />
+        </View>
+        <View style={styles.col}>
+          <Text style={styles.label}>Perímetro (m)</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={perimetro}
+            onChangeText={(text) => {
+              setPerimetro(text);
+              setCalcRealizado(false);
+            }}
+            placeholder="0.0"
+          />
+        </View>
+      </View>
+
+      <View style={styles.containerBotoes}>
+        <TouchableOpacity style={styles.botaoCalcular} onPress={handleCalcular}>
+          <Text style={styles.textoBotao}>Calcular</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={[
+            styles.botaoAdicionar,
+            !calcRealizado && { backgroundColor: "#9ca3af" },
+          ]}
+          onPress={handleAdicionar}
+          disabled={!calcRealizado}
+        >
+          <Text style={styles.textoBotao}>Adicionar Cômodo</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+}
+
+const styles = StyleSheet.create({
+  cardForm: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 10,
+    elevation: 2,
+  },
+  label: { fontSize: 13, fontWeight: "600", color: "#374151", marginBottom: 6 },
+  pickerContainer: {
+    backgroundColor: "#fefce8",
+    borderWidth: 2,
+    borderColor: "#3b82f6",
+    borderRadius: 8,
+    marginBottom: 14,
+    overflow: "hidden",
+  },
+  picker: { height: 50, color: "#1e3a8a", backgroundColor: "#fefce8" },
+  inputNome: {
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 15,
+    fontWeight: "500",
+    color: "#1F2937",
+    marginBottom: 14,
+  },
+  input: {
+    backgroundColor: "#f9fafb",
+    borderWidth: 1,
+    borderColor: "#d1d5db",
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 8,
+    fontSize: 15,
+  },
+  row: { flexDirection: "row", justifyContent: "space-between" },
+  col: { width: "48%" },
+  containerBotoes: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 16,
+  },
+  botaoCalcular: {
+    backgroundColor: "#2563eb",
+    padding: 12,
+    borderRadius: 8,
+    flex: 0.48,
+    alignItems: "center",
+  },
+  botaoAdicionar: {
+    backgroundColor: "#059669",
+    padding: 12,
+    borderRadius: 8,
+    flex: 0.48,
+    alignItems: "center",
+  },
+  textoBotao: { color: "#fff", fontWeight: "bold" },
+});

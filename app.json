@@ -1,27 +1,21 @@
 {
   "expo": {
-    "name": "CalcEletrResidencial",
+    "name": "Elétrica Residencial",
     "slug": "CalcEletrResidencial",
-    "version": "1.0.0",
+    "version": "2.2.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
-    "scheme": "calceletrresidencial",
+    "icon": "./assets/icon.png",
+    "scheme": "calculadoraeletricaresidencial",
     "userInterfaceStyle": "automatic",
-    "ios": {
-      "icon": "./assets/expo.icon"
-    },
+    "platforms": ["android", "web"],
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "backgroundColor": "#ffffff",
+        "foregroundImage": "./assets/icon.png"
       },
-      "predictiveBackGestureEnabled": false
-    },
-    "web": {
-      "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "predictiveBackGestureEnabled": false,
+      "package": "com.apsantosf.eletricaresidencial",
+      "versionCode": 28
     },
     "plugins": [
       "expo-router",
@@ -34,11 +28,20 @@
             "imageWidth": 76
           }
         }
-      ]
+      ],
+      "expo-image",
+      "expo-sharing"
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "b24445fb-366e-461f-8ab1-3d3925a9f91e"
+      }
+    },
+    "owner": "apsantosf"
   }
 }

@@ -1,5 +1,4 @@
 // src/data/regrasConcessionarias.ts
-
 export interface RegrasConcessionaria {
   nome: string;
   caboMinimoEntrada: number; // Ex: 10mm² para a maioria

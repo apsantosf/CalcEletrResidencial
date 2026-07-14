@@ -10,7 +10,7 @@ Cálculo de disjuntores.
 Interface intuitiva e ágil para uso profissional.
 
 para criar o .aab de Produção final
-npx eas build --platform android --profile production  
+npx eas build --platform android --profile production
 
 para criar .aad de teste (para ver se a loja aceita)
 npx eas build --platform android --profile preview-bundle
@@ -18,5 +18,11 @@ npx eas build --platform android --profile preview-bundle
 para criar o .apk de teste rápido
 npx eas build --profile preview --platform android
 
-Para utilizar bundletool-all-[versão].jar     -   Este aplicativo testa os .aab criados
+Para utilizar bundletool-all-[versão].jar
 java -jar C:\path\to\your\bundletool-all-x.x.x.jar
+
+Depois do commit
+git tag -a v2.1.0 -m "Release da Versão 2.1.0 - Destravado tela inicial, qualquer dado que for modificado refazerá todos os cálculos e telas que já foram utilizadas"
+
+Depois do push
+git push --tags         
